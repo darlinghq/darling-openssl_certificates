@@ -16,7 +16,7 @@ file(GLOB certificates "${CMAKE_CURRENT_SOURCE_DIR}/certs/*.crt")
 
 macro(hash_certificate cert hash)
 	execute_process(
-		COMMAND openssl x509 -noout -hash -in ${cert}
+		COMMAND openssl x509 -noout -subject_hash_old -in ${cert}
 		OUTPUT_VARIABLE ${hash}
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
