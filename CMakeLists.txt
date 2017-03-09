@@ -22,14 +22,22 @@ macro(hash_certificate cert hash)
 	)
 endmacro(hash_certificate)
 
+set(all_hashes "")
 foreach(certificate ${certificates})
 	get_filename_component(certificate_name ${certificate} NAME)
 	hash_certificate(${certificate} hash)
 
 	set(ext 0)
-	if(IS_SYMLINK "${HASH_DIRECTORY}/${hash}.${ext}")
-		set(ext 1)
-	endif(IS_SYMLINK "${HASH_DIRECTORY}/${hash}.${ext}")
+
+	while (TRUE)
+		list(FIND all_hashes "${hash}.${ext}" hash_exists)
+		if (hash_exists)
+			math (EXPR ext "${ext} + 1")
+		else (hash_exists)
+			break()
+		endif (hash_exists)
+	endwhile (TRUE)
+	list(APPEND all_hashes "${hash}.${ext}")
 
 	execute_process(
 		COMMAND ${CMAKE_COMMAND} -E create_symlink "${certificate_name}" "${hash}.${ext}"
