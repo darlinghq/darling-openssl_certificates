@@ -48,3 +48,12 @@ foreach(certificate ${certificates})
 		DESTINATION libexec/darling/System/Library/OpenSSL/certs
 	)
 endforeach(certificate)
+
+# build and install Security's `Certificates.bundle`
+add_custom_target(build-security-certificates ALL
+	COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-ca-bundle.py" "${HASH_DIRECTORY}"
+	BYPRODUCTS "${HASH_DIRECTORY}/Certificates.bundle"
+)
+install(DIRECTORY "${HASH_DIRECTORY}/Certificates.bundle"
+	DESTINATION libexec/darling/System/Library/Security
+)
