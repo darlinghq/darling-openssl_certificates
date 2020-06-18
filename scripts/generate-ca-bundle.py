@@ -7,7 +7,6 @@
 
 from hashlib import sha1
 from enum import IntEnum
-from typing import List, Tuple, Dict
 from functools import reduce
 from operator import add
 from os import listdir, path, makedirs
@@ -19,20 +18,20 @@ import json
 CRT_CERTIFICATE_HEADER = "-----BEGIN CERTIFICATE-----"
 CRT_CERTIFICATE_FOOTER = "-----END CERTIFICATE-----"
 
-def round_up_to_multiple(x: int, multiple: int) -> int:
+def round_up_to_multiple(x, multiple):
   mod = x % multiple
   if mod == 0:
     return x
   return x + (multiple - mod)
 
-def int_byte_count(x: int) -> int:
+def int_byte_count(x):
   return (x.bit_length() + 7) // 8
 
 # courtesy of https://stackoverflow.com/a/30375198/6620880 (but modified slightly)
-def int_to_bytes(x: int) -> bytes:
+def int_to_bytes(x):
   return x.to_bytes(int_byte_count(x), "big", signed = False)
 
-def int_from_bytes(xbytes: bytes) -> int:
+def int_from_bytes(xbytes):
   return int.from_bytes(xbytes, "big", signed = False)
 
 # i *would* use an ASN.1 module for Python, except that that would add another dependency
@@ -103,23 +102,18 @@ class DERTag(IntEnum):
   RelativeOIDIRI = 36
 
 class DER:
-  tag: DERTag
-  constructed: bool
-  klass: DERClass
-  content: bytes
-
-  def __init__(self, tag: DERTag, content: bytes, constructed: bool = False, klass: DERClass = DERClass.Universal):
+  def __init__(self, tag, content, constructed = False, klass = DERClass.Universal):
     self.tag = tag
     self.constructed = constructed
     self.klass = klass
     self.content = content
 
   @property
-  def content_length(self) -> int:
+  def content_length(self):
     return len(self.content)
 
   @property
-  def length(self) -> int:
+  def length(self):
     total_length = 2
 
     if self.tag > 30:
@@ -134,7 +128,7 @@ class DER:
     return total_length + self.content_length
 
   @staticmethod
-  def decode(der_bytes: bytes) -> "DER":
+  def decode(der_bytes):
     klass = (der_bytes[0] & DER_IDENTIFIER_CLASS) >> DER_IDENTIFIER_CLASS_OFFSET
     constructed = bool(der_bytes[0] & DER_IDENTIFIER_CONSTRUCTED)
     tag = (der_bytes[0] & DER_IDENTIFIER_TYPE) >> DER_IDENTIFIER_TYPE_OFFSET
@@ -162,7 +156,7 @@ class DER:
 
     return DER(tag, der_bytes[offset:(offset + content_length)], constructed, klass)
 
-  def encode(self) -> bytes:
+  def encode(self):
     der_bytes = bytearray()
     first_byte = 0
     first_byte |= int(self.klass) << DER_IDENTIFIER_CLASS_OFFSET
@@ -195,27 +189,22 @@ class DER:
     return bytes(der_bytes)
 
 class X501AttributeTypeAndValue:
-  type: DER
-  value: DER
-
-  def __init__(self, type: DER, value: DER):
+  def __init__(self, type, value):
     self.type = type
     self.value = value
 
 class X501Name:
-  realtive_distinguished_names: List[List[X501AttributeTypeAndValue]]
-
-  def __init__(self, rdns: List[List[X501AttributeTypeAndValue]]):
+  def __init__(self, rdns):
     self.realtive_distinguished_names = rdns
 
   @staticmethod
-  def decode(name_bytes: bytes) -> "X501Name":
+  def decode(name_bytes):
     name_der = DER.decode(name_bytes)
     assert name_der.tag == DERTag.Sequence
     assert name_der.constructed
 
     name_idx = 0
-    realtive_distinguished_names: List[List[X501AttributeTypeAndValue]] = []
+    realtive_distinguished_names = []
 
     while name_idx < name_der.content_length:
       rdn_der = DER.decode(name_der.content[name_idx:])
@@ -223,7 +212,7 @@ class X501Name:
       assert rdn_der.constructed
       assert rdn_der.length > 2 # need at least one element
 
-      rdn: List[X501AttributeTypeAndValue] = []
+      rdn = []
 
       rdn_idx = 0
       while rdn_idx < rdn_der.content_length:
@@ -254,10 +243,10 @@ class X501Name:
 
     return X501Name(realtive_distinguished_names)
 
-  def encode(self) -> bytes:
-    encoded_rdns: List[DER] = []
+  def encode(self):
+    encoded_rdns = []
     for rdn in self.realtive_distinguished_names:
-      encoded_atvs: List[DER] = []
+      encoded_atvs = []
       for atv in rdn:
         encoded_atvs.append(DER(DERTag.Sequence, atv.type.encode() + atv.value.encode(), constructed = True))
       atv_bytes = reduce(add, map(DER.encode, encoded_atvs))
@@ -268,7 +257,7 @@ class X501Name:
 # this class only extracts the fields we need to generate the hash
 # (i.e. the subject)
 class PartialX509Certificate:
-  def __init__(self, cert_bytes: bytes):
+  def __init__(self, cert_bytes):
     signed_cert_der = DER.decode(cert_bytes)
     assert signed_cert_der.tag == DERTag.Sequence
     assert signed_cert_der.constructed
@@ -313,7 +302,7 @@ class PartialX509Certificate:
     # decode the subject
     self.subject = X501Name.decode(subject_der.encode())
 
-def generate_subject_hash(cert_bytes: bytes) -> bytes:
+def generate_subject_hash(cert_bytes):
   cert = PartialX509Certificate(cert_bytes)
 
   for rdn in cert.subject.realtive_distinguished_names:
@@ -322,10 +311,10 @@ def generate_subject_hash(cert_bytes: bytes) -> bytes:
 
   return sha1(DER.decode(cert.subject.encode()).content).digest()
 
-def generate_certificate_hash(cert_bytes: bytes) -> bytes:
+def generate_certificate_hash(cert_bytes):
   return sha1(cert_bytes).digest()
 
-def certificate_to_bytes(cert_path: str) -> bytes:
+def certificate_to_bytes(cert_path):
   lines = []
   with open(cert_path, "r") as cert_file:
     lines = cert_file.readlines()
@@ -353,13 +342,13 @@ makedirs(resoure_out_dir, exist_ok = True)
 
 # key = certificate filename
 # value = list of OIDs for EV policies for that certificate
-evroots_list: Dict[str, List[str]] = {}
+evroots_list = {}
 
 # key = EV policy OID
 # value = list of SHA1 digests of certificates with that policy
-evroots: Dict[str, List[bytes]] = {}
+evroots = {}
 
-with open(path.join(resources_dir, "ev-roots.json"), "rb") as evroot_cfg:
+with open(path.join(resources_dir, "ev-roots.json"), "r") as evroot_cfg:
   tmp = json.load(evroot_cfg)["oids"]
   for oid in tmp:
     for f in tmp[oid]:
