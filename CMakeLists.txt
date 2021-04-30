@@ -1,6 +1,6 @@
 project(OpenSSL-Certificates)
 
-cmake_minimum_required(VERSION 2.4.0)
+cmake_minimum_required(VERSION 3.10)
 
 if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 NEW)
@@ -31,11 +31,11 @@ foreach(certificate ${certificates})
 
 	while (TRUE)
 		list(FIND all_hashes "${hash}.${ext}" hash_exists)
-		if (hash_exists)
+		if (NOT hash_exists EQUAL -1)
 			math (EXPR ext "${ext} + 1")
-		else (hash_exists)
+		else (NOT hash_exists EQUAL -1)
 			break()
-		endif (hash_exists)
+		endif (NOT hash_exists EQUAL -1)
 	endwhile (TRUE)
 	list(APPEND all_hashes "${hash}.${ext}")
 
