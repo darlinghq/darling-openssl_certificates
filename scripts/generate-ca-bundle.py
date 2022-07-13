@@ -13,7 +13,7 @@ from os import listdir, path, makedirs
 from base64 import b64decode, b64encode
 from argparse import ArgumentParser
 from shutil import copyfile
-import json
+import re
 
 CRT_CERTIFICATE_HEADER = "-----BEGIN CERTIFICATE-----"
 CRT_CERTIFICATE_FOOTER = "-----END CERTIFICATE-----"
@@ -56,6 +56,10 @@ DER_IDENTIFIER_TYPE_LONG_FORM_BIT_COUNT = 7
 
 DER_LENGTH_LONG_FORM_INDICATOR = 0b10000000
 DER_LENGTH_INITIAL_BYTE_BITS = 0b01111111
+
+EVROOT_VALID_ITEM_REGEX = r"^\s*([0-9.]+)(?:(?:\s*\"[^\"]+\")+)\s*$"
+# this assumes that no filenames will contain '"'
+EVROOT_FILE_REGEX = r"\"([^\"]+)\""
 
 class DERClass(IntEnum):
   Universal = 0
@@ -348,11 +352,26 @@ evroots_list = {}
 # value = list of SHA1 digests of certificates with that policy
 evroots = {}
 
-with open(path.join(resources_dir, "ev-roots.json"), "r") as evroot_cfg:
-  tmp = json.load(evroot_cfg)["oids"]
-  for oid in tmp:
-    for f in tmp[oid]:
-      f_list = evroots_list.setdefault(f, [])
+with open(path.join(resources_dir, "evroot.config"), "r") as evroot_cfg:
+  contents = evroot_cfg.readlines()
+
+  for line in contents:
+    stripped = line.strip()
+
+    if len(stripped) == 0 or stripped.startswith('#'):
+      continue
+
+    match = re.search(EVROOT_VALID_ITEM_REGEX, stripped)
+
+    if match == None:
+      continue
+
+    oid = match.group(1)
+    filenames = re.findall(EVROOT_FILE_REGEX, stripped)
+
+    for filename in filenames:
+      actual_filename = filename.replace(".cer", ".crt").replace(".der", ".crt")
+      f_list = evroots_list.setdefault(actual_filename, [])
       if oid not in f_list:
         f_list.append(oid)
       if "2.23.140.1.1" not in f_list:
@@ -360,7 +379,7 @@ with open(path.join(resources_dir, "ev-roots.json"), "r") as evroot_cfg:
 
 # add the certificate to the table
 #
-# also check if it's present in ev-roots.json
+# also check if it's present in evroot.config
 # if it is, then add its hash to EVRoots.plist
 for source_cert_name in source_cert_paths:
   source_cert_bytes = certificate_to_bytes(path.join(certs_dir, source_cert_name))

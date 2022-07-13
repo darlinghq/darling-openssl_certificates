@@ -53,6 +53,16 @@ endforeach(certificate)
 add_custom_command(
 	OUTPUT "${HASH_DIRECTORY}/Certificates.bundle"
 	COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-ca-bundle.py" "${HASH_DIRECTORY}"
+	DEPENDS
+		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/Allowed.plist"
+		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/AppleESCertificates.plist"
+		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/AssetVersion.plist"
+		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/Blocked.plist"
+		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/evroot.config"
+		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/GrayListedKeys.plist"
+		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/Info.plist"
+		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/version.plist"
+		"${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-ca-bundle.py"
 )
 add_custom_target(build-security-certificates ALL DEPENDS "${HASH_DIRECTORY}/Certificates.bundle")
 install(DIRECTORY "${HASH_DIRECTORY}/Certificates.bundle"
