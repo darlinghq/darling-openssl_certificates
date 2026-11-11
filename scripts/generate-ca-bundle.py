@@ -311,7 +311,9 @@ def generate_subject_hash(cert_bytes):
 
   for rdn in cert.subject.realtive_distinguished_names:
     for atv in rdn:
-      atv.value.content = reduce(lambda a, b: a + b' ' + b, atv.value.content.upper().split())
+      # Security's createNormalizedX501Name normalizes only PrintableString.
+      if atv.value.tag == DERTag.PrintableString:
+        atv.value.content = re.sub(rb"[ \t]+", b" ", atv.value.content.upper()).strip(b" \t")
 
   return sha1(DER.decode(cert.subject.encode()).content).digest()
 
