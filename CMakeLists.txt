@@ -58,7 +58,7 @@ add_custom_command(
 		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/AppleESCertificates.plist"
 		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/AssetVersion.plist"
 		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/Blocked.plist"
-		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/evroot.config"
+		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/EVRoots.json"
 		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/GrayListedKeys.plist"
 		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/Info.plist"
 		"${CMAKE_CURRENT_SOURCE_DIR}/security-bundle-resources/version.plist"
